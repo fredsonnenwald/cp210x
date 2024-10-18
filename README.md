@@ -5,8 +5,8 @@ This project modifies the stock Linux kernel driver for the Silicon Labs
 CP210X suite of devices to add support for modem control / status line
 changes with particular attention to the Pulse Per Second (PPS) signal.
 
-This was built and tested using Linux 5.15.0-84-generic with the Adafruit
-GPS with USB-C (i.e. version 3) with the CP2012N USB to Serial Adapter.
+This was built and tested using Linux 6.6.51+rpt-rpi-2712 with the Adafruit
+Ultimate GPS with USB-C (i.e., version 3) with the CP2012N USB to Serial Adapter.
 
 # Driver will NOT make it into the Linux kernel
 
@@ -17,7 +17,7 @@ Linux kernel. The patch was rejected for two reasons:
    inspected for a special escape sequence. While necessary for the GPS
    receiver, it is unnecessary for the majority of devices. As such, it was
    regarded as undesirable behavior.
-   
+
 2. The timing precision provided by this device was regarded as inferior when
    compared to traditional serial devices. Traditional serial PPS devices yield
    timing precision of ~5-10 nanoseconds relevant to UTC. Because this device
@@ -35,11 +35,14 @@ this driver.
    skipping commit `4d9f958f6b44de604ffa81d09bcfa851aef92f56`.
 2. Add support for `TIOCMIWAIT` and modem status `EMBED_EVENTS`
 3. Add support for the Adafruit GPS with USB-C's PPS signal on the RI line.
+4. Update for Raspberry Pi OS 6.6.51 kernel, add kernel message notification of PPS support,
+   and add `make install`.
 
 # Building, testing, and installing
 
-The following instructions were written for Ubuntu 20.04. Your operating
-system may require different installation steps.
+The following instructions were written for [Raspberry Pi OS](https://www.raspberrypi.com/software/operating-systems/)
+Lite 12 (Bookworm) on a Raspberry Pi 5.
+Your operating system may require different installation steps.
 
 1. Blacklist the stock driver in the Linux Kernel by adding `blacklist cp210x`
 to the end of the `/etc/modprobe.d/blacklist.conf` file. Then reboot your
@@ -51,16 +54,16 @@ $ tail /etc/modprobe.d/blacklist.conf
 blacklist cp210x
 ```
 
-2. Install the Linux headers for your kernel version
+2. Install dependencies
 
 ```
-sudo apt install linux-headers-`uname -r`-generic
+sudo apt install gpsd git
 ```
 
 3. Clone and build this repository
 
 ```
-git clone https://github.com/bkloppenborg/cp210x
+git clone https://github.com/fredsonnenwald/cp210x
 cd cp210x
 make
 sudo insmod ./cp210x.ko
@@ -68,18 +71,22 @@ sudo insmod ./cp210x.ko
 
 4. Test that the driver works.
 
-Plug in your device. If it ends up on `/dev/ttyUSB0`:
+Plug in your device and run
 
 ```
-sudo gpsmon /dev/ttyUSB0
+gpsmon
 ```
 
 You should see GPS + PPS signals on the console.
+PPS signals may take a minutes or two to appear if the GPS module does not yet have a good fix.
+A good fix is indicated by `gpsmon` reporting "Quality: 2".
+
+If you have more than one GPS device explicitly specify the correct device by running, e.g., `gpsmon /dev/ttyUSB0`.
 
 5. Install the driver
 
 ```
-sudo cp ./cp210x.ko /usr/lib/modules/`uname-r`/kernel/drivers/usb/serial/
+sudo make install
 ```
 
 Note that you'll need to repeat this step every time the kernel is updated.
