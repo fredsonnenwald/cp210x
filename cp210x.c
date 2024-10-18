@@ -2228,6 +2228,8 @@ static int cp210x_attach(struct usb_serial *serial)
 				result);
 	}
 
+	dev_info(&serial->interface->dev, "PPS supported");
+
 	return 0;
 }
 
